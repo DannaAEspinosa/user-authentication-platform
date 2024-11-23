@@ -5,7 +5,7 @@ from src.middlewares import admin_required  # Middleware de autorización
 admin_bp = Blueprint('admin', __name__)
 # Ruta para registrar nuevos usuarios (solo administradores)
 @admin_bp.route('/register', methods=['POST'])
-@admin_required  # Solo los administradores pueden registrar
+@admin_required 
 def register():
     data = request.get_json()
     
@@ -18,6 +18,12 @@ def register():
     if existing_user:
         return jsonify({'message': 'Username already exists'}), 400
     
+    #Validar la contraseña para que cumpla con lo básico de seguridad.
+    if not User.validate_password(password):
+        return jsonify({
+            'message': 'Password must be at least 8 characters long, include an uppercase letter, '
+                       'a lowercase letter, a number, and a special character.'
+        }), 400
     # Crear el nuevo usuario con los datos proporcionados
     new_user = User(username=username, password=password, is_admin=is_admin)
     
@@ -33,12 +39,17 @@ def register():
 def change_password(user_id):
     data = request.get_json()
     new_password = data.get('new_password')
+    
+    # Validar que se haya recibido una nueva contraseña
+    if not new_password:
+        return jsonify({'message': 'New password is required'}), 400
+
 
     # Buscar el usuario por ID
     user = User.query.get(user_id)
     if user:
         # Hash de la nueva contraseña y actualizarla
-        user.password_hash = user.hash_password(new_password, user.salt)
+        user.password_hash, user.salt = user.hash_password(new_password)
         db.session.commit()
         return jsonify({'message': 'Password changed successfully'}), 200
     else:
@@ -51,7 +62,7 @@ def reset_password(user_id):
     user = User.query.get(user_id)
     if user:
         # Poner la contraseña en blanco (almacenando un hash de la cadena vacía)
-        user.password_hash = user.hash_password("", user.salt)
+        user.password_hash, user.salt = user.hash_password("")
         db.session.commit()
         return jsonify({'message': 'Password reset (blank) successfully'}), 200
     else:

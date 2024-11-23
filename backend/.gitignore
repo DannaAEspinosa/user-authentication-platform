@@ -1,0 +1,29 @@
+# Archivos sensibles
+.env
+config.json
+
+# Dependencias
+node_modules/
+vendor/
+
+# Archivos generados
+*.pyc
+*.log
+dist/
+build/
+
+# Configuración de IDE
+.vscode/
+.idea/
+
+# Claves o certificados
+*.key
+*.pem
+
+# Ignorar bases de datos y volúmenes locales
+*.db
+*.sqlite
+*.sql
+*.log
+
+/instance
