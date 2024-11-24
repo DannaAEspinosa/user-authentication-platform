@@ -45,9 +45,9 @@ def login():
             session['user_id'] = user.id
             user.last_login = datetime.now()
             db.session.commit()
-            return jsonify({'message': 'Login successful', 'user_id': user.id}), 200
+            return jsonify({'message': 'Login successful', 'success': True, 'user_id': user.id}), 200
         else:
-            return jsonify({'message': 'Invalid credentials or empty password'}), 401
+            return jsonify({'message': 'Invalid credentials or empty password','success': False}), 401
     return jsonify({'message': 'User not found'}), 404
 
 # Route for changing password (only for logged-in users)
@@ -122,3 +122,31 @@ def logout():
     """
     session.clear()
     return jsonify({'message': 'Logged out successfully'}), 200
+
+# Route for getting information about the currently logged-in user
+@auth_bp.route('/user-info', methods=['GET'])
+@login_required  # Authentication middleware
+def user_info():
+    """
+    Retrieves the information of the currently logged-in user.
+
+    Response:
+    ---------
+    - 200: Returns the user's information (username, isAdmin, lastLogin).
+    - 404: 'User not found' if no user exists for the session ID.
+
+    Behavior:
+    ---------
+    - Checks the session to identify the logged-in user and retrieves their information.
+    """
+    user_id = session.get('user_id')  # Get user ID from session
+    user = User.query.get(user_id)   # Query the database for user info
+
+    if user:
+        return jsonify({
+            'username': user.username,
+            'isAdmin': user.is_admin,  # Assuming `is_admin` is a Boolean field in your User model
+            'lastLogin': user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else None
+        }), 200
+
+    return jsonify({'message': 'User not found'}), 404

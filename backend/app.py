@@ -13,8 +13,10 @@ def create_app():
     app.config['SECRET_KEY'] = 'your_secret_key_here'  # Clave para manejar sesiones
 
     db.init_app(app)
-    CORS(app, supports_credentials=True)  # Permitir CORS para el frontend React
-
+    CORS(app,origins="http://localhost:3000", supports_credentials=True)  # Permitir CORS para el frontend React
+    app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+    app.config['SESSION_COOKIE_SECURE'] = False
+    
     # Registrar blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(admin_bp, url_prefix='/admin')

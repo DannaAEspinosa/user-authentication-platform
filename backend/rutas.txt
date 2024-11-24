@@ -1,0 +1,12 @@
+Endpoint               Methods  Rule                                
+---------------------  -------  ------------------------------------
+admin.change_password  POST     /admin/change_password/<int:user_id>
+admin.delete_user      DELETE   /admin/delete_user/<int:user_id>    
+admin.get_users        GET      /admin/users                        
+admin.register         POST     /admin/register                     
+admin.reset_password   POST     /admin/reset_password/<int:user_id> 
+auth.change_password   POST     /auth/change_password               
+auth.get_last_login    GET      /auth/last_login                    
+auth.login             POST     /auth/login                         
+auth.logout            POST     /auth/logout                        
+static                 GET      /static/<path:filename>             
