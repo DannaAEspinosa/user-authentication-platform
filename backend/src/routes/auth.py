@@ -33,7 +33,7 @@ def login():
             db.session.commit()
 
             # Responder con éxito
-            return jsonify({'message': 'Login successful'}), 200
+            return jsonify({'message': 'Login successful', 'user_id': user.id}), 200
         else:
             return jsonify({'message': 'Invalid credentials or empty password'}), 401
     return jsonify({'message': 'User not found'}), 404

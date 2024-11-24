@@ -1,6 +1,8 @@
 # Archivos sensibles
 .env
+.venv
 config.json
+/venv
 
 # Dependencias
 node_modules/
