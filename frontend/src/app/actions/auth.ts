@@ -9,13 +9,11 @@ export async function login(prevState: any, formData: FormData) {
   const password = formData.get('password') as string
 
   try {
-    const response = await apiClient.post('/auth/login', { username, password })
+    const response = await apiClient.post('/auth/login', { username, password }, {
+      withCredentials: true,  // Asegúrate de incluir las credenciales en la solicitud
+    });
+    console.log("Reponse login",response)
     if (response.data.success) {
-       (await cookies()).set('session', response.data.token, { 
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      })
       return { success: true, message: 'Inicio de sesión exitoso' }
     } else {
       return { success: false, message: response.data.message || 'Credenciales inválidas' }
@@ -28,8 +26,10 @@ export async function login(prevState: any, formData: FormData) {
 
 export async function getUserInfo() {
   try {
-      const response = await apiClient.get('/auth/user-info');
-      console.log(response)
+      const response = await apiClient.get('/auth/user-info', {
+        withCredentials: true,
+      });
+      console.log("Responde GetUser", response)
       return response.data;
 
   } catch (error) {

@@ -46,6 +46,7 @@ def login():
             user.last_login = datetime.now()
             db.session.commit()
             return jsonify({'message': 'Login successful', 'success': True, 'user_id': user.id}), 200
+            
         else:
             return jsonify({'message': 'Invalid credentials or empty password','success': False}), 401
     return jsonify({'message': 'User not found'}), 404

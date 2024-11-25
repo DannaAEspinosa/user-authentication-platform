@@ -13,9 +13,14 @@ def create_app():
     app.config['SECRET_KEY'] = 'your_secret_key_here'  # Clave para manejar sesiones
 
     db.init_app(app)
-    CORS(app,origins="http://localhost:3000", supports_credentials=True)  # Permitir CORS para el frontend React
-    app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-    app.config['SESSION_COOKIE_SECURE'] = False
+
+    
+    CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)  # Permitir CORS para el frontend React
+    app.config['SESSION_COOKIE_NAME'] = 'session'  # Nombre de la cookie de sesión
+    app.config['SESSION_COOKIE_SECURE'] = False  # Establecer a True si usas HTTPS
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # Hacer que la cookie solo sea accesible por HTTP (no a través de JavaScript)
+    app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Opcional: ayuda a prevenir ataques CSRF
+
     
     # Registrar blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
