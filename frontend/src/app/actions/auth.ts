@@ -1,50 +1,80 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use server'
 
-import { cookies } from 'next/headers'
-import apiClient from '../../libs/apiClient'; 
-
 export async function login(prevState: any, formData: FormData) {
-  const username = formData.get('username') as string
-  const password = formData.get('password') as string
+  const username = formData.get('username') as string;
+  const password = formData.get('password') as string;
 
   try {
-    const response = await apiClient.post('/auth/login', { username, password }, {
-      withCredentials: true,  // Asegúrate de incluir las credenciales en la solicitud
+    const response = await fetch('http://localhost:5000/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
     });
-    console.log("Reponse login",response)
-    if (response.data.success) {
-      return { success: true, message: 'Inicio de sesión exitoso' }
+
+    const data = await response.json();
+    console.log("Response login", data);
+
+    if (data.success) {
+      // Almacenar el token en localStorage
+      localStorage.setItem('access_token', data.access_token);
+
+      return { success: true, message: 'Inicio de sesión exitoso' };
     } else {
-      return { success: false, message: response.data.message || 'Credenciales inválidas' }
+      return { success: false, message: data.message || 'Credenciales inválidas' };
     }
   } catch (error) {
-    console.error('Error durante el inicio de sesión:', error)
-    return { success: false, message: 'Error al intentar iniciar sesión' }
+    console.error('Error durante el inicio de sesión:', error);
+    return { success: false, message: 'Error al intentar iniciar sesión' };
   }
 }
 
 export async function getUserInfo() {
-  try {
-      const response = await apiClient.get('/auth/user-info', {
-        withCredentials: true,
-      });
-      console.log("Responde GetUser", response)
-      return response.data;
+  const token = localStorage.getItem('access_token');  // Obtener el token de localStorage
 
+  if (!token) {
+    throw new Error('No token found, please login again');
+  }
+
+  try {
+    const response = await fetch('http://localhost:5000/auth/user-info', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,  // Enviar el token en la cabecera
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al obtener la información del usuario');
+    }
+
+    const data = await response.json();
+    console.log("Response GetUser", data);
+    return data;
   } catch (error) {
-      console.error('Error al obtener la información del usuario:', error);
-      throw error;
+    console.error('Error al obtener la información del usuario:', error);
+    throw error;
   }
 }
 
-
 export async function logout() {
   try {
-    await apiClient.post('/auth/logout')
-    ;(await cookies()).delete('session')
+    // Eliminar el token del almacenamiento local
+    localStorage.removeItem('access_token');
+
+    // Opcionalmente, también puedes hacer una solicitud de logout al backend para invalidar el token
+    await fetch('http://localhost:5000/auth/logout', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+    });
+
   } catch (error) {
-    console.error('Error durante el cierre de sesión:', error)
+    console.error('Error durante el cierre de sesión:', error);
   }
 }
 

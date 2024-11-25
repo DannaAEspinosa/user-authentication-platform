@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from src.models import db, User
@@ -16,10 +17,15 @@ def create_app():
 
     
     CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)  # Permitir CORS para el frontend React
+    
+    # Inicializar JWTManager
+    jwt = JWTManager(app)
+    
     app.config['SESSION_COOKIE_NAME'] = 'session'  # Nombre de la cookie de sesión
     app.config['SESSION_COOKIE_SECURE'] = False  # Establecer a True si usas HTTPS
     app.config['SESSION_COOKIE_HTTPONLY'] = True  # Hacer que la cookie solo sea accesible por HTTP (no a través de JavaScript)
     app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Opcional: ayuda a prevenir ataques CSRF
+    app.config['SESSION_COOKIE_DOMAIN'] = 'localhost'  # Esto asegura que las cookies sean válidas para localhost
 
     
     # Registrar blueprints

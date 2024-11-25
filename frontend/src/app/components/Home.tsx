@@ -30,6 +30,7 @@ export default function Home() {
   }
 
   if (!userInfo) {
+    
     return <div>Cargando...</div>
   }
 
