@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use server'
 
-import { cookies } from 'next/headers'
-
 export async function login(prevState: any, formData: FormData) {
   const username = formData.get('username') as string;
   const password = formData.get('password') as string;
@@ -14,13 +12,15 @@ export async function login(prevState: any, formData: FormData) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ username, password }),
-      credentials: 'include', // Asegúrate de incluir las credenciales (cookies)
     });
 
     const data = await response.json();
     console.log("Response login", data);
 
     if (data.success) {
+      // Almacenar el token en localStorage
+      localStorage.setItem('access_token', data.access_token);
+
       return { success: true, message: 'Inicio de sesión exitoso' };
     } else {
       return { success: false, message: data.message || 'Credenciales inválidas' };
@@ -32,10 +32,19 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 export async function getUserInfo() {
+  const token = localStorage.getItem('access_token');  // Obtener el token de localStorage
+
+  if (!token) {
+    throw new Error('No token found, please login again');
+  }
+
   try {
     const response = await fetch('http://localhost:5000/auth/user-info', {
       method: 'GET',
-      credentials: 'include',  // Asegúrate de incluir las credenciales (cookies)
+      headers: {
+        'Authorization': `Bearer ${token}`,  // Enviar el token en la cabecera
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
@@ -53,15 +62,19 @@ export async function getUserInfo() {
 
 export async function logout() {
   try {
+    // Eliminar el token del almacenamiento local
+    localStorage.removeItem('access_token');
+
+    // Opcionalmente, también puedes hacer una solicitud de logout al backend para invalidar el token
     await fetch('http://localhost:5000/auth/logout', {
       method: 'POST',
-      credentials: 'include', // Asegúrate de incluir las credenciales (cookies)
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
     });
 
-    // Eliminar la cookie en el cliente (usando `cookies()` de Next.js)
-    const cookieStore = await cookies();
-    cookieStore.delete('session');
   } catch (error) {
     console.error('Error durante el cierre de sesión:', error);
   }
 }
+
