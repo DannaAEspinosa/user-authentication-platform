@@ -15,16 +15,16 @@ interface User {
   id: number
   username: string
   last_login: string
+  isDialogOpen: boolean;
 }
 
 export default function AdminDashboard() {
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<(User & { isDialogOpen: boolean })[]>([])
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [newUsername, setNewUsername] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [passwordChangeUserId, setPasswordChangeUserId] = useState<number | null>(null)
   const [newUserPassword, setNewUserPassword] = useState('')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     const result = await getUsers()
     setIsLoading(false)
     if (result.success) {
-      setUsers(result.data)
+      setUsers(result.data.map(user => ({ ...user, isDialogOpen: false })))
     } else {
       setMessage({ type: 'error', text: result.message })
     }
@@ -58,9 +58,11 @@ export default function AdminDashboard() {
     const result = await changeUserPassword(userId, newUserPassword)
     setMessage({ type: result.success ? 'success' : 'error', text: result.message })
     if (result.success) {
+      setUsers(users.map(u => 
+        u.id === userId ? { ...u, isDialogOpen: false } : u
+      ))
       setPasswordChangeUserId(null)
       setNewUserPassword('')
-      setIsDialogOpen(false)
     }
   }
 
@@ -111,14 +113,21 @@ export default function AdminDashboard() {
                     <TableCell>{new Date(user.last_login).toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <Dialog 
+                          open={user.isDialogOpen} 
+                          onOpenChange={(open) => {
+                            setUsers(users.map(u => 
+                              u.id === user.id ? { ...u, isDialogOpen: open } : u
+                            ))
+                          }}
+                        >
                           <DialogTrigger asChild>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => {
                                 setPasswordChangeUserId(user.id)
-                                setIsDialogOpen(true)
+                                setNewUserPassword('')
                               }}
                             >
                               <Key className="h-4 w-4 mr-2" />
