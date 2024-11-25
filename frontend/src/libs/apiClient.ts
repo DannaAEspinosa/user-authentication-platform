@@ -1,8 +1,23 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL, // URL base de tu backend
-  withCredentials: true, // Necesario para enviar cookies de sesión
+  baseURL: 'http://localhost:5000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+apiClient.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 export default apiClient;
+

@@ -1,10 +1,17 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import apiClient from '../../libs/apiClient'
+
+async function getAuthHeaders() {
+  const token = (await cookies()).get('token')?.value
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export async function getUsers() {
   try {
-    const response = await apiClient.get('/admin/users')
+    const headers = await getAuthHeaders()
+    const response = await apiClient.get('/admin/users', { headers })
     return response.data
   } catch (error) {
     console.error('Error al obtener la lista de usuarios:', error)
@@ -14,7 +21,8 @@ export async function getUsers() {
 
 export async function deleteUser(userId: number) {
   try {
-    const response = await apiClient.delete(`/admin/delete_user/${userId}`)
+    const headers = await getAuthHeaders()
+    const response = await apiClient.delete(`/admin/delete_user/${userId}`, { headers })
     return response.data
   } catch (error) {
     console.error('Error al eliminar usuario:', error)
@@ -24,7 +32,8 @@ export async function deleteUser(userId: number) {
 
 export async function changeUserPassword(userId: number, newPassword: string) {
   try {
-    const response = await apiClient.post(`/admin/change_password/${userId}`, { newPassword })
+    const headers = await getAuthHeaders()
+    const response = await apiClient.post(`/admin/change_password/${userId}`, { new_password: newPassword }, { headers })
     return response.data
   } catch (error) {
     console.error('Error al cambiar la contraseña del usuario:', error)
@@ -34,7 +43,8 @@ export async function changeUserPassword(userId: number, newPassword: string) {
 
 export async function resetUserPassword(userId: number) {
   try {
-    const response = await apiClient.post(`/admin/reset_password/${userId}`)
+    const headers = await getAuthHeaders()
+    const response = await apiClient.post(`/admin/reset_password/${userId}`, {}, { headers })
     return response.data
   } catch (error) {
     console.error('Error al resetear la contraseña del usuario:', error)
@@ -44,7 +54,8 @@ export async function resetUserPassword(userId: number) {
 
 export async function registerUser(username: string, password: string) {
   try {
-    const response = await apiClient.post('/admin/register', { username, password })
+    const headers = await getAuthHeaders()
+    const response = await apiClient.post('/admin/register', { username, password }, { headers })
     return response.data
   } catch (error) {
     console.error('Error al registrar nuevo usuario:', error)

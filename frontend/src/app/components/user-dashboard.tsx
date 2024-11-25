@@ -25,7 +25,7 @@ export default function UserDashboard({ username, lastLogin }: UserDashboardProp
       return
     }
     const result = await changePassword(newPassword)
-    if (result.success) {
+    if (result.message === 'Password changed successfully') {
       setMessage({ type: 'success', text: 'Contraseña cambiada exitosamente' })
       setNewPassword('')
       setConfirmPassword('')

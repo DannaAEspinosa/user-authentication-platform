@@ -4,23 +4,38 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import {logout ,getUserInfo} from '../actions/auth'
+import { logout, getUserInfo } from '../actions/auth'
 import AdminDashboard from './admin-dashboard'
 import UserDashboard from './user-dashboard'
 
 export default function Home() {
-  const [userInfo, setUserInfo] = useState<{ username: string; isAdmin: boolean; lastLogin?: string } | null>(null)
+  const [userInfo, setUserInfo] = useState<{ username: string; is_admin: boolean; last_login?: string } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
     const fetchUserInfo = async () => {
-      const info = await getUserInfo()
-      if (info) {
-        setUserInfo(info)
-      } else {
+      setIsLoading(true)
+      try {
+        const info = await getUserInfo()
+        console.log('info:', info)
+        if (info) {
+          setUserInfo({
+            username: info.username,
+            is_admin: info.isAdmin, // Ajusta la propiedad aquí
+            last_login: info.lastLogin, // Ajusta la propiedad aquí
+          })
+        } else {
+          router.push('/login')
+        }
+      } catch (error) {
+        console.error('Error fetching user info:', error)
         router.push('/login')
+      } finally {
+        setIsLoading(false)
       }
     }
+
     fetchUserInfo()
   }, [router])
 
@@ -29,9 +44,12 @@ export default function Home() {
     router.push('/login')
   }
 
-  if (!userInfo) {
-    
+  if (isLoading) {
     return <div>Cargando...</div>
+  }
+
+  if (!userInfo) {
+    return null
   }
 
   return (
@@ -40,7 +58,7 @@ export default function Home() {
         <CardHeader>
           <CardTitle>Bienvenido, {userInfo.username}</CardTitle>
           <CardDescription>
-            {userInfo.isAdmin ? 'Panel de Administrador' : 'Panel de Usuario'}
+            {userInfo.is_admin ? 'Panel de Administrador' : 'Panel de Usuario'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -48,10 +66,10 @@ export default function Home() {
         </CardContent>
       </Card>
       
-      {userInfo.isAdmin ? (
+      {userInfo.is_admin ? (
         <AdminDashboard />
       ) : (
-        <UserDashboard username={userInfo.username} lastLogin={userInfo.lastLogin} />
+        <UserDashboard username={userInfo.username} lastLogin={userInfo.last_login} />
       )}
     </div>
   )

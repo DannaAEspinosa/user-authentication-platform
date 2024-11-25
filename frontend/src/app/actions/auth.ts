@@ -1,27 +1,26 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use server'
+
+import apiClient from '../../libs/apiClient'
+import { cookies } from 'next/headers'
 
 export async function login(prevState: any, formData: FormData) {
   const username = formData.get('username') as string;
   const password = formData.get('password') as string;
 
   try {
-    const response = await fetch('http://localhost:5000/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const data = await response.json();
-    console.log("Response login", data);
+    const response = await apiClient.post('/auth/login', { username, password });
+    const data = response.data;
 
     if (data.success) {
-      // Solo acceder a localStorage si estamos en el navegador
-      if (typeof window !== "undefined") {
-        localStorage.setItem('token', data.access_token);
-      }
+      // Store the token in a secure HTTP-only cookie
+      (await
+        // Store the token in a secure HTTP-only cookie
+        cookies()).set('token', data.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600 // 1 hour
+      });
 
       return { success: true, message: 'Inicio de sesión exitoso' };
     } else {
@@ -34,30 +33,22 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 export async function getUserInfo() {
-  
-  const token = localStorage.getItem('access_token');  // Obtener el token de localStorage
-
-  if (!token) {
-    throw new Error('No token found, please login again');
-  }
-
   try {
-    const response = await fetch('http://localhost:5000/auth/user-info', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,  // Enviar el token en la cabecera
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Error al obtener la información del usuario');
+    const token = (await cookies()).get('token')?.value;
+    if (!token) {
+      throw new Error('No token found, please login again');
     }
 
-    const data = await response.json();
-    console.log("Response GetUser", data);
-    return data;
-  } catch (error) {
+    const response = await apiClient.get('/auth/user-info', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error: any) {
+    if (error.response && error.response.status === 401) {
+      console.error('Error de autenticación al obtener la información del usuario');
+      (await cookies()).delete('token');
+      throw new Error('Sesión expirada o inválida');
+    }
     console.error('Error al obtener la información del usuario:', error);
     throw error;
   }
@@ -65,19 +56,16 @@ export async function getUserInfo() {
 
 export async function logout() {
   try {
-    // Eliminar el token del almacenamiento local
-    localStorage.removeItem('access_token');
-
-    // Opcionalmente, también puedes hacer una solicitud de logout al backend para invalidar el token
-    await fetch('http://localhost:5000/auth/logout', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-      },
-    });
-
+    const token = (await cookies()).get('token')?.value;
+    if (token) {
+      await apiClient.post('/auth/logout', null, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    }
   } catch (error) {
     console.error('Error durante el cierre de sesión:', error);
+  } finally {
+    (await cookies()).delete('token');
   }
 }
 

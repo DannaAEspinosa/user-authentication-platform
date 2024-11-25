@@ -16,7 +16,7 @@ def create_app():
     db.init_app(app)
 
     
-    CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)  # Permitir CORS para el frontend React
+    CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
     
     # Inicializar JWTManager
     jwt = JWTManager(app)
