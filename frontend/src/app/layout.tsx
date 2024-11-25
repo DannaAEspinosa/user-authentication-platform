@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Login App',
-  description: 'A simple login application',
+  title: 'Auth System',
+  description: 'Frontend for Flask Auth System',
 }
 
 export default function RootLayout({

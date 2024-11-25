@@ -14,7 +14,7 @@ export async function login(prevState: any, formData: FormData) {
        (await cookies()).set('session', response.data.token, { 
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        sameSite: 'lax'
       })
       return { success: true, message: 'Inicio de sesión exitoso' }
     } else {
@@ -28,13 +28,23 @@ export async function login(prevState: any, formData: FormData) {
 
 export async function getUserInfo() {
   try {
-      const response = await apiClient.get('/auth/user-info');
-      console.log(response)
-      return response.data;
+    const cookieStore = cookies()
+    const sessionCookie = (await cookieStore).get('session')
+    
+    if (!sessionCookie) {
+      throw new Error('No session cookie found')
+    }
 
+    const response = await apiClient.get('/auth/user-info', {
+      headers: {
+        Cookie: `session=${sessionCookie.value}`
+      }
+    });
+    
+    return response.data;
   } catch (error) {
-      console.error('Error al obtener la información del usuario:', error);
-      throw error;
+    console.error('Error al obtener la información del usuario:', error);
+    throw error;
   }
 }
 
