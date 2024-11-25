@@ -10,20 +10,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from 'next/navigation'
 
 export default function LoginForm() {
-    const router = useRouter()
-    const [state, setState] = useState<{ success: boolean; message: string } | null>(null)
-    const [isPending, setIsPending] = useState(false)
-  
-    const handleSubmit = async (formData: FormData) => {
-      setIsPending(true)
-      const response = await login(null, formData) // Llama a la función `login` y espera la respuesta
-      console.log(response) // Verifica que 'response' tenga la estructura esperada
-      setState(response) // Actualiza el estado con la respuesta
-      setIsPending(false)
-  
-      if (response.success) {
-        router.push('/') // Redirige si el inicio de sesión fue exitoso
-      }
+  const router = useRouter()
+  const [state, setState] = useState<{ success: boolean; message: string } | null>(null)
+  const [isPending, setIsPending] = useState(false)
+
+  const handleSubmit = async (formData: FormData) => {
+    setIsPending(true)
+    const response = await login(null, formData)
+    setState(response)
+    setIsPending(false)
+
+    if (response.success) {
+      router.push('/')
+    }
   }
 
   return (
@@ -34,12 +33,12 @@ export default function LoginForm() {
       </CardHeader>
       <CardContent>
         <form
-            onSubmit={(e) => {
-                e.preventDefault()
-                const formData = new FormData(e.target as HTMLFormElement)
-                handleSubmit(formData)
-            }}
-            >
+          onSubmit={(e) => {
+            e.preventDefault()
+            const formData = new FormData(e.target as HTMLFormElement)
+            handleSubmit(formData)
+          }}
+        >
           <div className="grid w-full items-center gap-4">
             <div className="flex flex-col space-y-1.5">
               <Label htmlFor="username">Nombre de usuario</Label>
@@ -65,3 +64,4 @@ export default function LoginForm() {
     </Card>
   )
 }
+

@@ -1,60 +1,54 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use server'
 
-import { cookies } from 'next/headers'
-import apiClient from '../../libs/apiClient'; 
-
+import apiClient from '../../libs/apiClient'
 export async function login(prevState: any, formData: FormData) {
-  const username = formData.get('username') as string
-  const password = formData.get('password') as string
+  const username = formData.get('username') as string;
+  const password = formData.get('password') as string;
 
   try {
-    const response = await apiClient.post('/auth/login', { username, password })
-    if (response.data.success) {
-       (await cookies()).set('session', response.data.token, { 
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      })
-      return { success: true, message: 'Inicio de sesión exitoso' }
+    const response = await apiClient.post('/auth/login', { username, password });
+    const data = response.data;
+
+    if (data.success) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('access_token', data.token);
+      }
+      return { success: true, message: 'Inicio de sesión exitoso' };
     } else {
-      return { success: false, message: response.data.message || 'Credenciales inválidas' }
+      return { success: false, message: data.message || 'Credenciales inválidas' };
     }
   } catch (error) {
-    console.error('Error durante el inicio de sesión:', error)
-    return { success: false, message: 'Error al intentar iniciar sesión' }
+    console.error('Error durante el inicio de sesión:', error);
+    return { success: false, message: 'Error al intentar iniciar sesión' };
   }
 }
 
 export async function getUserInfo() {
   try {
-    const cookieStore = cookies()
-    const sessionCookie = (await cookieStore).get('session')
-    
-    if (!sessionCookie) {
-      throw new Error('No session cookie found')
-    }
-
-    const response = await apiClient.get('/auth/user-info', {
-      headers: {
-        Cookie: `session=${sessionCookie.value}`
-      }
-    });
-    
+    const response = await apiClient.get('/auth/user-info');
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
+    if (error.response && error.response.status === 401) {
+      console.error('Error de autenticación al obtener la información del usuario');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+      }
+      throw new Error('Sesión expirada o inválida');
+    }
     console.error('Error al obtener la información del usuario:', error);
     throw error;
   }
 }
 
-
 export async function logout() {
   try {
-    await apiClient.post('/auth/logout')
-    ;(await cookies()).delete('session')
+    await apiClient.post('/auth/logout');
   } catch (error) {
-    console.error('Error durante el cierre de sesión:', error)
+    console.error('Error durante el cierre de sesión:', error);
+  } finally {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from src.models import db, User
@@ -13,9 +14,19 @@ def create_app():
     app.config['SECRET_KEY'] = 'your_secret_key_here'  # Clave para manejar sesiones
 
     db.init_app(app)
-    CORS(app,origins="http://localhost:3000", supports_credentials=True)  # Permitir CORS para el frontend React
-    app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-    app.config['SESSION_COOKIE_SECURE'] = False
+
+    
+    CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)  # Permitir CORS para el frontend React
+    
+    # Inicializar JWTManager
+    jwt = JWTManager(app)
+    
+    app.config['SESSION_COOKIE_NAME'] = 'session'  # Nombre de la cookie de sesión
+    app.config['SESSION_COOKIE_SECURE'] = False  # Establecer a True si usas HTTPS
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # Hacer que la cookie solo sea accesible por HTTP (no a través de JavaScript)
+    app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Opcional: ayuda a prevenir ataques CSRF
+    app.config['SESSION_COOKIE_DOMAIN'] = 'localhost'  # Esto asegura que las cookies sean válidas para localhost
+
     
     # Registrar blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')

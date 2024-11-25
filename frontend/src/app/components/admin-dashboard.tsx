@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -14,7 +13,7 @@ import { getUsers, deleteUser, changeUserPassword, resetUserPassword, registerUs
 interface User {
   id: number
   username: string
-  lastLogin: string
+  last_login: string
 }
 
 export default function AdminDashboard() {
@@ -22,7 +21,7 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [newUsername, setNewUsername] = useState('')
   const [newPassword, setNewPassword] = useState('')
-  const [passwordChangeUserId, setPasswordChangeUserId] = useState<number | null>(null)  // Renamed this variable
+  const [passwordChangeUserId, setPasswordChangeUserId] = useState<number | null>(null)
   const [newUserPassword, setNewUserPassword] = useState('')
 
   useEffect(() => {
@@ -36,7 +35,7 @@ export default function AdminDashboard() {
 
   const handleDeleteUser = async (userId: number) => {
     const result = await deleteUser(userId)
-    if (result.success) {
+    if (result.message === 'User deleted successfully') {
       setMessage({ type: 'success', text: `Usuario eliminado exitosamente` })
       fetchUsers()
     } else {
@@ -50,9 +49,9 @@ export default function AdminDashboard() {
       return
     }
     const result = await changeUserPassword(userId, newUserPassword)
-    if (result.success) {
+    if (result.message === 'Password changed successfully') {
       setMessage({ type: 'success', text: `Contraseña cambiada exitosamente` })
-      setPasswordChangeUserId(null)  // Use the renamed variable here
+      setPasswordChangeUserId(null)
       setNewUserPassword('')
     } else {
       setMessage({ type: 'error', text: result.message || 'Error al cambiar la contraseña' })
@@ -61,7 +60,7 @@ export default function AdminDashboard() {
 
   const handleResetPassword = async (userId: number) => {
     const result = await resetUserPassword(userId)
-    if (result.success) {
+    if (result.message === 'Password reset (blank) successfully') {
       setMessage({ type: 'success', text: `Contraseña reseteada exitosamente` })
     } else {
       setMessage({ type: 'error', text: result.message || 'Error al resetear la contraseña' })
@@ -75,7 +74,7 @@ export default function AdminDashboard() {
       return
     }
     const result = await registerUser(newUsername, newPassword)
-    if (result.success) {
+    if (result.message === 'User registered successfully') {
       setMessage({ type: 'success', text: 'Usuario registrado exitosamente' })
       setNewUsername('')
       setNewPassword('')
@@ -104,7 +103,7 @@ export default function AdminDashboard() {
               {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.lastLogin}</TableCell>
+                  <TableCell>{user.last_login}</TableCell>
                   <TableCell>
                     <Button onClick={() => handleDeleteUser(user.id)} variant="destructive" className="mr-2">
                       Eliminar
@@ -185,3 +184,4 @@ export default function AdminDashboard() {
     </div>
   )
 }
+

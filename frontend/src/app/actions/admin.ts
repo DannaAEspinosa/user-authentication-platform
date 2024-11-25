@@ -24,7 +24,7 @@ export async function deleteUser(userId: number) {
 
 export async function changeUserPassword(userId: number, newPassword: string) {
   try {
-    const response = await apiClient.post(`/admin/change_password/${userId}`, { newPassword })
+    const response = await apiClient.post(`/admin/change_password/${userId}`, { new_password: newPassword })
     return response.data
   } catch (error) {
     console.error('Error al cambiar la contraseña del usuario:', error)
