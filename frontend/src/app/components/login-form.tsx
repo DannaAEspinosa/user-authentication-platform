@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from 'next/navigation'
+import { Loader2, LogIn } from 'lucide-react'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -26,9 +27,9 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="w-[350px]">
-      <CardHeader>
-        <CardTitle>Iniciar sesión</CardTitle>
+    <Card className="w-[350px] shadow-lg">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold">Iniciar sesión</CardTitle>
         <CardDescription>Ingresa tus credenciales para acceder</CardDescription>
       </CardHeader>
       <CardContent>
@@ -38,29 +39,33 @@ export default function LoginForm() {
             const formData = new FormData(e.target as HTMLFormElement)
             handleSubmit(formData)
           }}
+          className="space-y-4"
         >
-          <div className="grid w-full items-center gap-4">
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="username">Nombre de usuario</Label>
-              <Input id="username" name="username" type="text" placeholder="usuario" required />
-            </div>
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input id="password" name="password" type="password" required />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="username">Nombre de usuario</Label>
+            <Input id="username" name="username" type="text" placeholder="usuario" required />
           </div>
-          {state && (
-            <Alert className={`mt-4 ${state.success ? 'bg-green-100' : 'bg-red-100'}`}>
-              <AlertDescription>{state.message}</AlertDescription>
-            </Alert>
-          )}
-          <CardFooter className="flex justify-between mt-4 p-0">
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Iniciando sesión...' : 'Iniciar sesión'}
-            </Button>
-          </CardFooter>
+          <div className="space-y-2">
+            <Label htmlFor="password">Contraseña</Label>
+            <Input id="password" name="password" type="password" required />
+          </div>
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <LogIn className="h-4 w-4 mr-2" />
+            )}
+            {isPending ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          </Button>
         </form>
       </CardContent>
+      {state && (
+        <CardFooter>
+          <Alert className={`w-full ${state.success ? 'bg-green-100' : 'bg-red-100'}`}>
+            <AlertDescription>{state.message}</AlertDescription>
+          </Alert>
+        </CardFooter>
+      )}
     </Card>
   )
 }

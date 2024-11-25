@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { getUsers, deleteUser, changeUserPassword, resetUserPassword, registerUser } from '../actions/admin'
+import { Loader2, UserPlus, Key, Trash2 } from 'lucide-react'
 
 interface User {
   id: number
@@ -24,13 +25,16 @@ export default function AdminDashboard() {
   const [passwordChangeUserId, setPasswordChangeUserId] = useState<number | null>(null)
   const [newUserPassword, setNewUserPassword] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     fetchUsers()
   }, [])
 
   const fetchUsers = async () => {
+    setIsLoading(true)
     const result = await getUsers()
+    setIsLoading(false)
     if (result.success) {
       setUsers(result.data)
     } else {
@@ -56,7 +60,7 @@ export default function AdminDashboard() {
     if (result.success) {
       setPasswordChangeUserId(null)
       setNewUserPassword('')
-      setIsDialogOpen(false)  // Close the dialog on success
+      setIsDialogOpen(false)
     }
   }
 
@@ -81,73 +85,93 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
+    <div className="space-y-6">
+      <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Gestión de Usuarios</CardTitle>
+          <CardTitle className="text-2xl font-bold">Gestión de Usuarios</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre de Usuario</TableHead>
-                <TableHead>Último Login</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.last_login}</TableCell>
-                  <TableCell>
-                    <Button onClick={() => handleDeleteUser(user.id)} variant="destructive" className="mr-2">
-                      Eliminar
-                    </Button>
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button onClick={() => {
-                          setPasswordChangeUserId(user.id)
-                          setIsDialogOpen(true)
-                        }} className="mr-2">
-                          Cambiar Contraseña
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Cambiar Contraseña</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="newPassword" className="text-right">
-                              Nueva Contraseña
-                            </Label>
-                            <Input
-                              id="newPassword"
-                              type="password"
-                              value={newUserPassword}
-                              onChange={(e) => setNewUserPassword(e.target.value)}
-                              className="col-span-3"
-                            />
-                          </div>
-                        </div>
-                        <Button onClick={() => handleChangePassword(user.id)}>Guardar Cambios</Button>
-                      </DialogContent>
-                    </Dialog>
-                    <Button onClick={() => handleResetPassword(user.id)} variant="outline">
-                      Poner en Blanco
-                    </Button>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre de Usuario</TableHead>
+                  <TableHead>Último Login</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.username}</TableCell>
+                    <TableCell>{new Date(user.last_login).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setPasswordChangeUserId(user.id)
+                                setIsDialogOpen(true)
+                              }}
+                            >
+                              <Key className="h-4 w-4 mr-2" />
+                              Cambiar Contraseña
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Cambiar Contraseña para {user.username}</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                              <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="newPassword" className="text-right">
+                                  Nueva Contraseña
+                                </Label>
+                                <Input
+                                  id="newPassword"
+                                  type="password"
+                                  value={newUserPassword}
+                                  onChange={(e) => setNewUserPassword(e.target.value)}
+                                  className="col-span-3"
+                                />
+                              </div>
+                            </div>
+                            <Button onClick={() => handleChangePassword(user.id)}>Guardar Cambios</Button>
+                            {message && (
+                              <Alert className={`mt-2 ${message.type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
+                                <AlertDescription>{message.text}</AlertDescription>
+                              </Alert>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+                        <Button onClick={() => handleResetPassword(user.id)} variant="outline" size="sm">
+                          <Key className="h-4 w-4 mr-2" />
+                          Poner en Blanco
+                        </Button>
+                        <Button onClick={() => handleDeleteUser(user.id)} variant="destructive" size="sm">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Registrar Nuevo Usuario</CardTitle>
+          <CardTitle className="text-2xl font-bold">Registrar Nuevo Usuario</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegisterUser} className="space-y-4">
@@ -170,16 +194,18 @@ export default function AdminDashboard() {
                 required
               />
             </div>
-            <Button type="submit">Registrar Usuario</Button>
+            <Button type="submit">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Registrar Usuario
+            </Button>
           </form>
+          {message && (
+            <Alert className={`mt-4 ${message.type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
-
-      {message && (
-        <Alert className={`mt-4 ${message.type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
-          <AlertDescription>{message.text}</AlertDescription>
-        </Alert>
-      )}
     </div>
   )
 }
