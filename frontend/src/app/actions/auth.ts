@@ -18,8 +18,10 @@ export async function login(prevState: any, formData: FormData) {
     console.log("Response login", data);
 
     if (data.success) {
-      // Almacenar el token en localStorage
-      localStorage.setItem('access_token', data.access_token);
+      // Solo acceder a localStorage si estamos en el navegador
+      if (typeof window !== "undefined") {
+        localStorage.setItem('token', data.access_token);
+      }
 
       return { success: true, message: 'Inicio de sesión exitoso' };
     } else {
@@ -32,6 +34,7 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 export async function getUserInfo() {
+  
   const token = localStorage.getItem('access_token');  // Obtener el token de localStorage
 
   if (!token) {
