@@ -50,6 +50,8 @@ def login():
             'token': token,
             'is_admin': user.is_admin
         }), 200
+    elif user == "":
+        return jsonify({'message': 'Your password has been reset. Contact administrator for more information', 'success': False}), 401
     else:
         return jsonify({'message': 'Invalid credentials', 'success': False}), 401
 

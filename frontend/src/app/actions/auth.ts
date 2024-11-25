@@ -1,7 +1,7 @@
 'use server'
 
-import apiClient from '../../libs/apiClient'
 import { cookies } from 'next/headers'
+import apiClient from '../../libs/apiClient'
 
 export async function login(prevState: any, formData: FormData) {
   const username = formData.get('username') as string;
@@ -12,10 +12,7 @@ export async function login(prevState: any, formData: FormData) {
     const data = response.data;
 
     if (data.success) {
-      // Store the token in a secure HTTP-only cookie
-      (await
-        // Store the token in a secure HTTP-only cookie
-        cookies()).set('token', data.token, {
+      (await cookies()).set('token', data.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -26,9 +23,12 @@ export async function login(prevState: any, formData: FormData) {
     } else {
       return { success: false, message: data.message || 'Credenciales inválidas' };
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error durante el inicio de sesión:', error);
-    return { success: false, message: 'Error al intentar iniciar sesión' };
+    return { 
+      success: false, 
+      message: error.response?.data?.message || 'Error al intentar iniciar sesión'
+    };
   }
 }
 
@@ -44,13 +44,12 @@ export async function getUserInfo() {
     });
     return response.data;
   } catch (error: any) {
-    if (error.response && error.response.status === 401) {
-      console.error('Error de autenticación al obtener la información del usuario');
+    console.error('Error al obtener la información del usuario:', error);
+    if (error.response?.status === 401) {
       (await cookies()).delete('token');
       throw new Error('Sesión expirada o inválida');
     }
-    console.error('Error al obtener la información del usuario:', error);
-    throw error;
+    throw new Error(error.response?.data?.message || 'Error al obtener la información del usuario');
   }
 }
 
@@ -62,7 +61,7 @@ export async function logout() {
         headers: { Authorization: `Bearer ${token}` }
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error durante el cierre de sesión:', error);
   } finally {
     (await cookies()).delete('token');

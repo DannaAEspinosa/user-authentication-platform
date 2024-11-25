@@ -10,7 +10,7 @@ import { changePassword } from '../actions/user'
 
 interface UserDashboardProps {
   username: string
-  lastLogin?: string
+  lastLogin: string | undefined
 }
 
 export default function UserDashboard({ username, lastLogin }: UserDashboardProps) {
@@ -25,12 +25,13 @@ export default function UserDashboard({ username, lastLogin }: UserDashboardProp
       return
     }
     const result = await changePassword(newPassword)
-    if (result.message === 'Password changed successfully') {
-      setMessage({ type: 'success', text: 'Contraseña cambiada exitosamente' })
+    setMessage({ 
+      type: result.success ? 'success' : 'error', 
+      text: result.message 
+    })
+    if (result.success) {
       setNewPassword('')
       setConfirmPassword('')
-    } else {
-      setMessage({ type: 'error', text: result.message || 'Error al cambiar la contraseña' })
     }
   }
 
@@ -42,7 +43,7 @@ export default function UserDashboard({ username, lastLogin }: UserDashboardProp
         </CardHeader>
         <CardContent>
           <p>Nombre de usuario: {username}</p>
-          <p>Último inicio de sesión: {lastLogin || 'No disponible'}</p>
+          <p>Último inicio de sesión: {lastLogin ? new Date(lastLogin).toLocaleString() : 'No disponible'}</p>
         </CardContent>
       </Card>
 

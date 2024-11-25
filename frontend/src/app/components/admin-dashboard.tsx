@@ -23,23 +23,26 @@ export default function AdminDashboard() {
   const [newPassword, setNewPassword] = useState('')
   const [passwordChangeUserId, setPasswordChangeUserId] = useState<number | null>(null)
   const [newUserPassword, setNewUserPassword] = useState('')
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchUsers()
   }, [])
 
   const fetchUsers = async () => {
-    const fetchedUsers = await getUsers()
-    setUsers(fetchedUsers)
+    const result = await getUsers()
+    if (result.success) {
+      setUsers(result.data)
+    } else {
+      setMessage({ type: 'error', text: result.message })
+    }
   }
 
   const handleDeleteUser = async (userId: number) => {
     const result = await deleteUser(userId)
-    if (result.message === 'User deleted successfully') {
-      setMessage({ type: 'success', text: `Usuario eliminado exitosamente` })
+    setMessage({ type: result.success ? 'success' : 'error', text: result.message })
+    if (result.success) {
       fetchUsers()
-    } else {
-      setMessage({ type: 'error', text: result.message || 'Error al eliminar usuario' })
     }
   }
 
@@ -49,22 +52,17 @@ export default function AdminDashboard() {
       return
     }
     const result = await changeUserPassword(userId, newUserPassword)
-    if (result.message === 'Password changed successfully') {
-      setMessage({ type: 'success', text: `Contraseña cambiada exitosamente` })
+    setMessage({ type: result.success ? 'success' : 'error', text: result.message })
+    if (result.success) {
       setPasswordChangeUserId(null)
       setNewUserPassword('')
-    } else {
-      setMessage({ type: 'error', text: result.message || 'Error al cambiar la contraseña' })
+      setIsDialogOpen(false)  // Close the dialog on success
     }
   }
 
   const handleResetPassword = async (userId: number) => {
     const result = await resetUserPassword(userId)
-    if (result.message === 'Password reset (blank) successfully') {
-      setMessage({ type: 'success', text: `Contraseña reseteada exitosamente` })
-    } else {
-      setMessage({ type: 'error', text: result.message || 'Error al resetear la contraseña' })
-    }
+    setMessage({ type: result.success ? 'success' : 'error', text: result.message })
   }
 
   const handleRegisterUser = async (e: React.FormEvent) => {
@@ -74,13 +72,11 @@ export default function AdminDashboard() {
       return
     }
     const result = await registerUser(newUsername, newPassword)
-    if (result.message === 'User registered successfully') {
-      setMessage({ type: 'success', text: 'Usuario registrado exitosamente' })
+    setMessage({ type: result.success ? 'success' : 'error', text: result.message })
+    if (result.success) {
       setNewUsername('')
       setNewPassword('')
       fetchUsers()
-    } else {
-      setMessage({ type: 'error', text: result.message || 'Error al registrar usuario' })
     }
   }
 
@@ -108,9 +104,12 @@ export default function AdminDashboard() {
                     <Button onClick={() => handleDeleteUser(user.id)} variant="destructive" className="mr-2">
                       Eliminar
                     </Button>
-                    <Dialog>
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                       <DialogTrigger asChild>
-                        <Button onClick={() => setPasswordChangeUserId(user.id)} className="mr-2">
+                        <Button onClick={() => {
+                          setPasswordChangeUserId(user.id)
+                          setIsDialogOpen(true)
+                        }} className="mr-2">
                           Cambiar Contraseña
                         </Button>
                       </DialogTrigger>
