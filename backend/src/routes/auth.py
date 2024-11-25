@@ -44,8 +44,8 @@ def login():
             
             # Generate JWT token
             token = generate_jwt(user.id)
+            return jsonify({'message': 'Login successful', 'success': True, 'user_id': user.id, 'token': token}), 200
 
-            return jsonify({'message': 'Login successful', 'success': True, 'token': token}), 200
         else:
             return jsonify({'message': 'Invalid credentials or empty password','success': False}), 401
     return jsonify({'message': 'User not found'}), 404
@@ -118,7 +118,6 @@ def logout():
     """
     return jsonify({'message': 'Logged out successfully'}), 200
 
-# Route for getting information about the currently logged-in user
 @auth_bp.route('/user-info', methods=['GET'])
 @login_required  # Authentication middleware
 def user_info():
@@ -132,16 +131,41 @@ def user_info():
 
     Behavior:
     ---------
-    - Checks the decoded JWT token to identify the logged-in user and retrieves their information.
+    - Uses decode_jwt to extract user ID and fetch user details from the database.
     """
-    user_id = decode_jwt(request.headers.get('Authorization'))  # Extract user ID from the token
-    user = User.query.get(user_id)
+    # Obtiene el token del encabezado Authorization
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return jsonify({'message': 'Authorization header missing'}), 401
 
-    if user:
+    # Valida que el formato del token sea 'Bearer <token>'
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'message': 'Invalid token format'}), 401
+
+    # Extrae el token real
+    token = auth_header.split(' ')[1]
+
+    try:
+        # Decodifica el token para obtener el user_id
+        decoded_data = decode_jwt(token)
+        if not decoded_data:
+            return jsonify({'message': 'Invalid or expired token'}), 401
+
+        user_id = decoded_data.get('user_id')  # Asegúrate de usar el campo correcto
+        if not user_id:
+            return jsonify({'message': 'Token missing user_id'}), 401
+
+        # Busca al usuario en la base de datos
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        # Respuesta exitosa con información del usuario
         return jsonify({
             'username': user.username,
-            'isAdmin': user.is_admin,  # Assuming `is_admin` is a Boolean field in your User model
+            'isAdmin': user.is_admin,
             'lastLogin': user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else None
         }), 200
 
-    return jsonify({'message': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'Error decoding token', 'error': str(e)}), 401
