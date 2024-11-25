@@ -18,8 +18,13 @@ export default function Home() {
       setIsLoading(true)
       try {
         const info = await getUserInfo()
+        console.log('info:', info)
         if (info) {
-          setUserInfo(info)
+          setUserInfo({
+            username: info.username,
+            is_admin: info.isAdmin, // Ajusta la propiedad aquí
+            last_login: info.lastLogin, // Ajusta la propiedad aquí
+          })
         } else {
           router.push('/login')
         }

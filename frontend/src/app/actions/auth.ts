@@ -1,6 +1,8 @@
 'use server'
 
 import apiClient from '../../libs/apiClient'
+import { cookies } from 'next/headers'
+
 export async function login(prevState: any, formData: FormData) {
   const username = formData.get('username') as string;
   const password = formData.get('password') as string;
@@ -10,9 +12,16 @@ export async function login(prevState: any, formData: FormData) {
     const data = response.data;
 
     if (data.success) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('access_token', data.token);
-      }
+      // Store the token in a secure HTTP-only cookie
+      (await
+        // Store the token in a secure HTTP-only cookie
+        cookies()).set('token', data.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600 // 1 hour
+      });
+
       return { success: true, message: 'Inicio de sesión exitoso' };
     } else {
       return { success: false, message: data.message || 'Credenciales inválidas' };
@@ -25,14 +34,19 @@ export async function login(prevState: any, formData: FormData) {
 
 export async function getUserInfo() {
   try {
-    const response = await apiClient.get('/auth/user-info');
+    const token = (await cookies()).get('token')?.value;
+    if (!token) {
+      throw new Error('No token found, please login again');
+    }
+
+    const response = await apiClient.get('/auth/user-info', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     return response.data;
   } catch (error: any) {
     if (error.response && error.response.status === 401) {
       console.error('Error de autenticación al obtener la información del usuario');
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('access_token');
-      }
+      (await cookies()).delete('token');
       throw new Error('Sesión expirada o inválida');
     }
     console.error('Error al obtener la información del usuario:', error);
@@ -42,13 +56,16 @@ export async function getUserInfo() {
 
 export async function logout() {
   try {
-    await apiClient.post('/auth/logout');
+    const token = (await cookies()).get('token')?.value;
+    if (token) {
+      await apiClient.post('/auth/logout', null, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    }
   } catch (error) {
     console.error('Error durante el cierre de sesión:', error);
   } finally {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('access_token');
-    }
+    (await cookies()).delete('token');
   }
 }
 

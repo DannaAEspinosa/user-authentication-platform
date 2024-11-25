@@ -35,24 +35,27 @@ def login():
     password = data.get('password')
 
     user = User.query.filter_by(username=username).first()
-    if user:
-        if user.check_password(""):  # Placeholder for checking if the account is secure
-            return jsonify({'message': 'Account not secure. Password reset required.'}), 403
-        if user.password_hash and user.check_password(password):
-            user.last_login = datetime.now()
-            db.session.commit()
-            
-            # Generate JWT token
-            token = generate_jwt(user.id)
-
-            return jsonify({'message': 'Login successful', 'success': True, 'token': token}), 200
-        else:
-            return jsonify({'message': 'Invalid credentials or empty password','success': False}), 401
-    return jsonify({'message': 'User not found'}), 404
+    if user and user.check_password(password):
+        if user.password_hash == "":
+            return jsonify({'message': 'Account not secure. Password reset required.', 'success': False}), 403
+        user.last_login = datetime.now()
+        db.session.commit()
+        
+        # Generate JWT token
+        token = generate_jwt(user.id)
+        return jsonify({
+            'message': 'Login successful',
+            'success': True,
+            'user_id': user.id,
+            'token': token,
+            'is_admin': user.is_admin
+        }), 200
+    else:
+        return jsonify({'message': 'Invalid credentials', 'success': False}), 401
 
 # Route for changing password (only for logged-in users)
 @auth_bp.route('/change_password', methods=['POST'])
-@login_required  # Authentication middleware
+@login_required
 def change_password():
     """
     Allows a logged-in user to change their password.
@@ -64,6 +67,7 @@ def change_password():
     Response:
     ---------
     - 200: 'Password changed successfully' if the password is successfully updated.
+    - 400: 'New password is required' if no password is provided.
     - 404: 'User not found' if the user with the provided JWT token does not exist.
 
     Behavior:
@@ -73,15 +77,53 @@ def change_password():
     """
     data = request.get_json()
     new_password = data.get('new_password')
+    
+    if not new_password:
+        return jsonify({'message': 'New password is required', 'success': False}), 400
 
-    user_id = decode_jwt(request.headers.get('Authorization'))  # Extract user ID from the token
-    user = User.query.get(user_id)
-    if user:
+    # Get the token from the Authorization header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'message': 'Invalid token format', 'success': False}), 401
+
+    token = auth_header.split(' ')[1]
+    
+    try:
+        # Decode the token to get the user_id
+        payload = decode_jwt(token)
+        if not payload or 'user_id' not in payload:
+            return jsonify({'message': 'Invalid token', 'success': False}), 401
+        
+        user_id = payload['user_id']
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'message': 'User not found', 'success': False}), 404
+        
+        # Validate password security requirements
+        if not User.validate_password(new_password):
+            return jsonify({
+                'message': 'Password must be at least 8 characters long, include an uppercase letter, '
+                        'a lowercase letter, a number, and a special character.',
+                'success': False
+            }), 400
+
+        # Update the password
         user.password_hash, user.salt = user.hash_password(new_password)
         db.session.commit()
-        return jsonify({'message': 'Password changed successfully'}), 200
-    else:
-        return jsonify({'message': 'User not found'}), 404
+        
+        return jsonify({
+            'message': 'Password changed successfully',
+            'success': True
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'message': f'Error changing password: {str(e)}',
+            'success': False
+        }), 500
+
 
 # Route for getting the last login time of a user (only for logged-in users)
 @auth_bp.route('/last_login', methods=['GET'])
@@ -118,7 +160,6 @@ def logout():
     """
     return jsonify({'message': 'Logged out successfully'}), 200
 
-# Route for getting information about the currently logged-in user
 @auth_bp.route('/user-info', methods=['GET'])
 @login_required  # Authentication middleware
 def user_info():
@@ -132,16 +173,41 @@ def user_info():
 
     Behavior:
     ---------
-    - Checks the decoded JWT token to identify the logged-in user and retrieves their information.
+    - Uses decode_jwt to extract user ID and fetch user details from the database.
     """
-    user_id = decode_jwt(request.headers.get('Authorization'))  # Extract user ID from the token
-    user = User.query.get(user_id)
+    # Obtiene el token del encabezado Authorization
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return jsonify({'message': 'Authorization header missing'}), 401
 
-    if user:
+    # Valida que el formato del token sea 'Bearer <token>'
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'message': 'Invalid token format'}), 401
+
+    # Extrae el token real
+    token = auth_header.split(' ')[1]
+
+    try:
+        # Decodifica el token para obtener el user_id
+        decoded_data = decode_jwt(token)
+        if not decoded_data:
+            return jsonify({'message': 'Invalid or expired token'}), 401
+
+        user_id = decoded_data.get('user_id')  # Asegúrate de usar el campo correcto
+        if not user_id:
+            return jsonify({'message': 'Token missing user_id'}), 401
+
+        # Busca al usuario en la base de datos
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        # Respuesta exitosa con información del usuario
         return jsonify({
             'username': user.username,
-            'isAdmin': user.is_admin,  # Assuming `is_admin` is a Boolean field in your User model
+            'isAdmin': user.is_admin,
             'lastLogin': user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else None
         }), 200
 
-    return jsonify({'message': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'Error decoding token', 'error': str(e)}), 401

@@ -1,21 +1,22 @@
 import unittest
-from flask import Flask, jsonify, session
+from flask import Flask, jsonify
 from flask_testing import TestCase
 from src.models import db, User
 from src.routes.auth import auth_bp
 from datetime import datetime
 from unittest.mock import patch
+from src.utils.jwt_utils import generate_jwt
 
 class TestAuthRoutes(TestCase):
-    
+
     def create_app(self):
         """
-        Configures the Flask app for testing, including database setup and 
-        registering the authentication blueprint.
+        Configura la aplicación Flask para las pruebas, incluyendo la configuración de la base de datos 
+        y el registro del blueprint de autenticación.
         """
         app = Flask(__name__)
         app.config['SECRET_KEY'] = 'mysecretkey'
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'  # In-memory database for testing
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'  # Base de datos en memoria para pruebas
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         app.register_blueprint(auth_bp)
         db.init_app(app)
@@ -23,131 +24,143 @@ class TestAuthRoutes(TestCase):
 
     def setUp(self):
         """
-        Sets up the test environment before each test. This creates a test user 
-        and adds it to the in-memory database.
+        Configura el entorno de prueba antes de cada prueba. Crea un usuario de prueba 
+        y lo agrega a la base de datos en memoria.
         """
         db.create_all()
 
-        # Creates a test user
+        # Crea un usuario de prueba
         self.user = User(username="testuser", password="Test1234!", is_admin=False)
         db.session.add(self.user)
         db.session.commit()
 
     def tearDown(self):
         """
-        Cleans up the test environment after each test. This removes all data 
-        from the database to ensure a fresh start for the next test.
+        Limpia el entorno de prueba después de cada prueba. Elimina todos los datos 
+        de la base de datos para asegurar un inicio limpio para la siguiente prueba.
         """
         db.session.remove()
         db.drop_all()
 
     def test_login_success(self):
         """
-        Tests a successful login with valid credentials.
+        Prueba que el login es exitoso con credenciales válidas.
         """
-        # Simulate a successful login with correct credentials
         response = self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
-        
-        # Verifies that the response status is 200 (OK)
         self.assertEqual(response.status_code, 200)
         
-        # Verifies that 'user_id' is included in the response JSON
-        self.assertIn('user_id', response.json)
+        # Verifica si la respuesta contiene un token
+        self.assertIn('token', response.json)
         
-        # Compares the 'user_id' from the response to the expected 'user.id'
-        self.assertEqual(response.json['user_id'], self.user.id)
+        token = response.json['token']
+        
+        # Verifica si el token es un JWT válido
+        self.assertIsInstance(token, str)
+        
+        # Simula una solicitud autenticada usando el token
+        response = self.client.get('/user-info', headers={'Authorization': f'Bearer {token}'})
+        self.assertEqual(response.status_code, 200)
+        
+        # Verifica que el nombre de usuario se devuelve en la respuesta
+        self.assertIn('username', response.json)
+        self.assertEqual(response.json['username'], 'testuser')
 
     def test_login_user_already_logged_in(self):
         """
-        Tests that a user cannot log in if they are already logged in.
+        Prueba que un usuario no puede hacer login si ya está autenticado.
         """
         with self.client:
-            self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
+            # Realiza el login y obtiene el token
+            login_response = self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
+            token = login_response.json['token']
+            
+            # Intenta hacer login nuevamente con el mismo usuario
             response = self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
-            self.assert400(response)  # Verifies a bad request status code
+            self.assertEqual(response.status_code, 400)
             self.assertIn('A user is already logged in', response.json['message'])
 
     def test_login_invalid_credentials(self):
         """
-        Tests that login fails when invalid credentials are provided.
+        Prueba que el login falla cuando se proporcionan credenciales inválidas.
         """
         response = self.client.post('/login', json={'username': 'testuser', 'password': 'WrongPassword'})
-        self.assert401(response)  # Verifies an unauthorized status code
+        self.assertEqual(response.status_code, 401)
         self.assertIn('Invalid credentials or empty password', response.json['message'])
 
     def test_change_password_success(self):
         """
-        Tests that password change is successful when the user is logged in.
+        Prueba que el cambio de contraseña es exitoso cuando el usuario está autenticado.
         """
         with self.client:
-            self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
-            response = self.client.post('/change_password', json={'new_password': 'NewPassword123!'})
-            self.assert200(response)  # Verifies a successful response status code
+            # Inicia sesión y obtiene el token
+            login_response = self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
+            token = login_response.json['token']
+            
+            # Cambia la contraseña
+            response = self.client.post('/change_password', json={'new_password': 'NewPassword123!'},
+                                        headers={'Authorization': f'Bearer {token}'})
+            self.assertEqual(response.status_code, 200)
             self.assertIn('Password changed successfully', response.json['message'])
         
-            # Verifies that the password has been updated
+            # Verifica que la nueva contraseña sea correcta
             user = User.query.get(self.user.id)
             self.assertTrue(user.check_password('NewPassword123!'))
 
     def test_change_password_not_logged_in(self):
         """
-        Tests that the password cannot be changed if no user is logged in.
+        Prueba que la contraseña no se puede cambiar si el usuario no está autenticado.
         """
         response = self.client.post('/change_password', json={'new_password': 'NewPassword123!'})
-        self.assert401(response)  # Verifies an unauthorized status code
+        self.assertEqual(response.status_code, 401)
         self.assertIn('Unauthorized', response.json['message'])
 
     def test_get_last_login_success(self):
         """
-        Tests that the last login time is returned correctly when the user is logged in.
+        Prueba que la última hora de login se devuelve correctamente cuando el usuario está autenticado.
         """
         with self.client:
-            self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
-            response = self.client.get('/last_login')
-            self.assert200(response)  # Verifies a successful response status code
+            login_response = self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
+            token = login_response.json['token']
             
-            # Verifies that 'last_login' is included in the response JSON
+            response = self.client.get('/last_login', headers={'Authorization': f'Bearer {token}'})
+            self.assertEqual(response.status_code, 200)
+            
             self.assertIn('last_login', response.json)
             
-            # Ensures that 'last_login' is a string
+            # Compara la fecha y hora devueltas por la API con la última fecha de login en la base de datos
             response_datetime_str = response.json['last_login']
             self.assertIsInstance(response_datetime_str, str)
             
-            # Converts the response datetime string to a datetime object
-            response_datetime = datetime.strptime(response_datetime_str, '%a, %d %b %Y %H:%M:%S GMT')
-            
-            # Removes microseconds from both the response and user datetime
-            response_datetime = response_datetime.replace(microsecond=0)
+            response_datetime = datetime.strptime(response_datetime_str, '%Y-%m-%d %H:%M:%S')
             self.user.last_login = self.user.last_login.replace(microsecond=0)
-            
-            # Compares the datetime values
             self.assertEqual(response_datetime, self.user.last_login)
 
     def test_get_last_login_not_logged_in(self):
         """
-        Tests that the last login time cannot be retrieved if no user is logged in.
+        Prueba que no se puede obtener la última hora de login si el usuario no está autenticado.
         """
         response = self.client.get('/last_login')
-        self.assert401(response)  # Verifies an unauthorized status code
+        self.assertEqual(response.status_code, 401)
         self.assertIn('Unauthorized', response.json['message'])
 
     def test_logout_success(self):
         """
-        Tests a successful logout.
+        Prueba que el logout es exitoso.
         """
         with self.client:
-            self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
-            response = self.client.post('/logout')
-            self.assert200(response)  # Verifies a successful response status code
+            login_response = self.client.post('/login', json={'username': 'testuser', 'password': 'Test1234!'})
+            token = login_response.json['token']
+            
+            response = self.client.post('/logout', headers={'Authorization': f'Bearer {token}'})
+            self.assertEqual(response.status_code, 200)
             self.assertIn('Logged out successfully', response.json['message'])
-            self.assertIsNone(session.get('user_id'))  # Verifies that the session is cleared
 
     def test_logout_not_logged_in(self):
         """
-        Tests that a user cannot log out if they are not logged in.
+        Prueba que un usuario no puede hacer logout si no está autenticado.
         """
         response = self.client.post('/logout')
-        self.assert401(response)  # Verifies an unauthorized status code
+        self.assertEqual(response.status_code, 401)
         self.assertIn('Unauthorized', response.json['message'])
 
 if __name__ == '__main__':
