@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { changePassword } from '../actions/user'
+import { Key, User, Calendar } from 'lucide-react'
 
 interface UserDashboardProps {
   username: string
-  lastLogin?: string
+  lastLogin: string | undefined
 }
 
 export default function UserDashboard({ username, lastLogin }: UserDashboardProps) {
@@ -25,34 +26,42 @@ export default function UserDashboard({ username, lastLogin }: UserDashboardProp
       return
     }
     const result = await changePassword(newPassword)
-    if (result.message === 'Password changed successfully') {
-      setMessage({ type: 'success', text: 'Contraseña cambiada exitosamente' })
+    setMessage({ 
+      type: result.success ? 'success' : 'error', 
+      text: result.message 
+    })
+    if (result.success) {
       setNewPassword('')
       setConfirmPassword('')
-    } else {
-      setMessage({ type: 'error', text: result.message || 'Error al cambiar la contraseña' })
     }
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
+    <div className="space-y-6">
+      <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Información del Usuario</CardTitle>
+          <CardTitle className="text-2xl font-bold">Información del Usuario</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p>Nombre de usuario: {username}</p>
-          <p>Último inicio de sesión: {lastLogin || 'No disponible'}</p>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <User className="h-5 w-5 text-primary" />
+            <span className="font-medium">Nombre de usuario:</span> {username}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            <span className="font-medium">Último inicio de sesión:</span> 
+            {lastLogin ? new Date(lastLogin).toLocaleString() : 'No disponible'}
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Cambiar Contraseña</CardTitle>
+          <CardTitle className="text-2xl font-bold">Cambiar Contraseña</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleChangePassword} className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="newPassword">Nueva Contraseña</Label>
               <Input
                 id="newPassword"
@@ -62,7 +71,7 @@ export default function UserDashboard({ username, lastLogin }: UserDashboardProp
                 required
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña</Label>
               <Input
                 id="confirmPassword"
@@ -72,7 +81,10 @@ export default function UserDashboard({ username, lastLogin }: UserDashboardProp
                 required
               />
             </div>
-            <Button type="submit">Cambiar Contraseña</Button>
+            <Button type="submit">
+              <Key className="h-4 w-4 mr-2" />
+              Cambiar Contraseña
+            </Button>
           </form>
           {message && (
             <Alert className={`mt-4 ${message.type === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>

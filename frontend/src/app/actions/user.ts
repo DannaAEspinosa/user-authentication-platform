@@ -16,19 +16,12 @@ export async function changePassword(newPassword: string) {
       { new_password: newPassword },
       { headers }
     )
-    return response.data
+    return { success: true, message: response.data.message }
   } catch (error: any) {
     console.error('Error al cambiar la contraseña:', error)
-    if (error.response?.status === 404) {
-      return { 
-        success: false, 
-        message: 'Ruta no encontrada. Por favor, contacte al administrador.' 
-      }
-    }
     return { 
       success: false, 
-      message: 'Error al cambiar la contraseña. Por favor, intente nuevamente.' 
+      message: error.response?.data?.message || 'Error al cambiar la contraseña'
     }
   }
 }
-
