@@ -41,7 +41,6 @@ This **Secure Login System** offers a robust solution for managing users within 
 ---
 
 ### **✨ Authors:**
-✨ Authors:
 <p align="left"> <a href="https://github.com/DianaLBS" target="_blank"> <img src="https://images.weserv.nl/?url=https://avatars.githubusercontent.com/u/94185657?v=4&h=60&w=60&fit=cover&mask=circle" alt="Diana Lorena Balanta Solano" height="60" width="60"> </a> <a href="https://github.com/DannaAEspinosa" target="_blank"> <img src="https://images.weserv.nl/?url=https://avatars.githubusercontent.com/u/72267304?v=4&h=60&w=60&fit=cover&mask=circle" alt="Danna Alexandra Espinosa Arenas" height="60" width="60"> </a> <a href="https://github.com/SamuelSoto7" target="_blank"> <img src="https://images.weserv.nl/?url=https://avatars.githubusercontent.com/u/93529823?v=4&h=60&w=60&fit=cover&mask=circle" alt="Samuel Adrian Soto Ruiz" height="60" width="60"> </a> </p>
 
 ---
