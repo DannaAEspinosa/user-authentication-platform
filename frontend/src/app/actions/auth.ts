@@ -2,49 +2,66 @@
 'use server'
 
 import { cookies } from 'next/headers'
-import apiClient from '../../libs/apiClient'; 
 
 export async function login(prevState: any, formData: FormData) {
-  const username = formData.get('username') as string
-  const password = formData.get('password') as string
+  const username = formData.get('username') as string;
+  const password = formData.get('password') as string;
 
   try {
-    const response = await apiClient.post('/auth/login', { username, password }, {
-      withCredentials: true,  // Asegúrate de incluir las credenciales en la solicitud
+    const response = await fetch('http://localhost:5000/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+      credentials: 'include', // Asegúrate de incluir las credenciales (cookies)
     });
-    console.log("Reponse login",response)
-    if (response.data.success) {
-      return { success: true, message: 'Inicio de sesión exitoso' }
+
+    const data = await response.json();
+    console.log("Response login", data);
+
+    if (data.success) {
+      return { success: true, message: 'Inicio de sesión exitoso' };
     } else {
-      return { success: false, message: response.data.message || 'Credenciales inválidas' }
+      return { success: false, message: data.message || 'Credenciales inválidas' };
     }
   } catch (error) {
-    console.error('Error durante el inicio de sesión:', error)
-    return { success: false, message: 'Error al intentar iniciar sesión' }
+    console.error('Error durante el inicio de sesión:', error);
+    return { success: false, message: 'Error al intentar iniciar sesión' };
   }
 }
 
 export async function getUserInfo() {
   try {
-      const response = await apiClient.get('/auth/user-info', {
-        withCredentials: true,
-      });
-      console.log("Responde GetUser", response)
-      return response.data;
+    const response = await fetch('http://localhost:5000/auth/user-info', {
+      method: 'GET',
+      credentials: 'include',  // Asegúrate de incluir las credenciales (cookies)
+    });
 
+    if (!response.ok) {
+      throw new Error('Error al obtener la información del usuario');
+    }
+
+    const data = await response.json();
+    console.log("Response GetUser", data);
+    return data;
   } catch (error) {
-      console.error('Error al obtener la información del usuario:', error);
-      throw error;
+    console.error('Error al obtener la información del usuario:', error);
+    throw error;
   }
 }
-
 
 export async function logout() {
   try {
-    await apiClient.post('/auth/logout')
-    ;(await cookies()).delete('session')
+    await fetch('http://localhost:5000/auth/logout', {
+      method: 'POST',
+      credentials: 'include', // Asegúrate de incluir las credenciales (cookies)
+    });
+
+    // Eliminar la cookie en el cliente (usando `cookies()` de Next.js)
+    const cookieStore = await cookies();
+    cookieStore.delete('session');
   } catch (error) {
-    console.error('Error durante el cierre de sesión:', error)
+    console.error('Error durante el cierre de sesión:', error);
   }
 }
-

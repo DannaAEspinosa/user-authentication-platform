@@ -12,13 +12,5 @@ export async function changePassword(newPassword: string) {
   }
 }
 
-export async function getLast_Login() {
-    try {
-      const response = await apiClient.get('/auth/last_login')
-      return response.data
-    } catch (error) {
-      console.error('Error al obtener el ultimo login  ', error)
-      return []
-    }
-  }
+
 
