@@ -234,4 +234,3 @@ This section outlines the key best practices followed during the development of 
 - **Adaptation to Constraints:**  
   Despite time limitations, the team successfully developed a functional system that meets the primary objectives.
 
-This system provides a solid foundation for future expansions, such as implementing token-based authentication (JWT) or improving user experience.
