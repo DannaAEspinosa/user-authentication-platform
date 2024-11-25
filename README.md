@@ -1,17 +1,50 @@
-# Login System for User Management 🔒
+# **🔐 Secure Login System for User Management**
 
-This project provides a secure login system to manage users on a platform. It supports two types of users: an administrator who can manage users (view, delete, reset passwords), and common users who can change their passwords and view their last login time. 🧑‍💻
+This **Secure Login System** offers a robust solution for managing users within a platform, featuring an intuitive interface and powerful backend functionalities. The system ensures **data security** and **user privacy** while offering easy-to-use features for both **administrators** and **common users**.
 
-The system uses PBKDF2 for hashing passwords with salt to ensure secure storage 🔐. User data is stored in a text file or database, and the admin has full control over user management.
+## **Key Features:**
 
-Key Features:
+### **👩‍💼 Admin Features:**
+- **User Management:** View, delete, and reset passwords for all users.
+- **Full Control:** Manage user data, permissions, and roles effortlessly.
 
-🧑‍💼 Admin: Manage users, reset passwords, view all users
-👩‍💻 Common Users: Change password, view last login
-🔒 Secure password storage with hashing (PBKDF2)
-Perfect for platforms that need to handle user authentication with simplicity and security! ✨
+### **👨‍💻 Common User Features:**
+- **Password Management:** Securely change your password with ease.
+- **Last Login Info:** View your last login time for added convenience and security.
 
-Authors: 
-- Diana Lorena Balanta Solano
-- Danna Alexandra Espinosa Arenas
-- Samuel Adrian Soto 
+### **🔒 Secure Authentication & Storage:**
+- **Password Hashing:** All passwords are securely stored using **PBKDF2** hashing with salt, ensuring safe storage and data protection.
+- **JWT Authentication:** Seamless and secure authentication with **JSON Web Tokens (JWT)**, ensuring user sessions are protected.
+
+---
+
+## **Technologies Used:**
+
+- **Backend:** 
+   - <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/flask.svg" width="40"/> **Flask** for the API backend, providing flexibility and ease of development.
+- **Frontend:** 
+   - <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/nextdotjs.svg" width="40"/> **Next.js** with **TypeScript** for a dynamic and responsive user interface.
+   - <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/react.svg" width="40"/> **React** to build a seamless and interactive user experience.
+- **Database:** 
+   - <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/sqlite.svg" width="40"/> **SQLite3**, a lightweight and efficient database to store user credentials and data.
+- **Authentication:**
+   - <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/master/icons/jsonwebtokens.svg" width="40"/> **JWT (JSON Web Tokens)** for secure, token-based authentication.
+
+---
+
+## **Why Choose This System?**
+
+- **Simplicity**: Easy-to-implement user authentication system, perfect for small to medium platforms.
+- **Security**: With PBKDF2 password hashing, JWT authentication, and SQLite3 database storage, you can trust this system to handle sensitive data with care.
+- **Scalability**: Built with modern technologies (Flask, Next.js, React) to scale as your platform grows.
+
+---
+
+### **✨ Authors:**
+- **Diana Lorena Balanta Solano** 
+- **Danna Alexandra Espinosa Arenas** 
+- **Samuel Adrian Soto Ruiz**
+
+---
+
+🔒 **Perfect for platforms requiring simple yet secure user management!** 👩‍💻👨‍💻
